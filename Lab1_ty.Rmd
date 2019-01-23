@@ -1,36 +1,44 @@
 ---
-title: 'Lab #1'
+title: "Lab1_ty"
 author: "Tennison Yu"
-date: "January 14, 2019"
+date: "January 22, 2019"
 output: pdf_document
 ---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, echo=FALSE, warning=FALSE, message=FALSE)
+```
+
 
 ```{r}
 library(package = car)
 challenger = read.table(file="challenger.csv", sep=",", header = TRUE)
 ```
 
-4. The failure of an O-ring on the space shuttle Challenger’s booster rockets led to its destruction in 1986. Using data on previous space shuttle launches, Dalal et al. (1989) examine the probability of an O-ring failure as a function of temperature at launch and combustion pressure. Data from their paper is included in the challenger.csv file Below are the variables:
+4. The failure of an O-ring on the space shuttle Challenger's booster rockets led to its destruction in 1986. Using data on previous space shuttle launches, Dalal et al. (1989) examine the probability of an O-ring failure as a function of temperature at launch and combustion pressure. Data from their paper is included in the challenger.csv file Below are the variables:
 
-Flight: Flight number
-
-Temp: Temperature (F) at launch
-
-Pressure: Combustion pressure (psi)
-
-O.ring: Number of primary field O-ring failures
+- Flight: Flight Number
+
+- Temp: Temperature (F) at launch
+
+- Pressure: Combustion pressure (psi)
+
+- O.ring: Number of primary field O-ring failures
+
+- Number: Total number of primary field O-rings (six total, three each for the two booster rockets)
+
 
 Number: Total number of primary field O-rings (six total, three each for the two booster rockets)
 
 The response variable is O.ring, and the explanatory variables are Temp and Pressure. Complete the following:
 
-(a) The authors use logistic regression to estimate the probability an O-ring will fail. In order to use this model, the authors needed to assume that each O-ring is independent for each launch. Discuss why this assumption is necessary and the potential problems with it. Note that a subsequent analysis helped to alleviate the authors’ concerns about independence.
+(a) The authors use logistic regression to estimate the probability an O-ring will fail. In order to use this model, the authors needed to assume that each O-ring is independent for each launch. Discuss why this assumption is necessary and the potential problems with it. Note that a subsequent analysis helped to alleviate the authors' concerns about independence.
 
 The assumption comes from the denoting of the number of thermally stressed O-rings (X) to be a binomial random variable where the probabilities are estimated via logistic regression. Via the principal of binomial distribution, it assumes that each success/failure of a trial is independent of one another. This condition has to be met in order for binomial distribution to be used. 
 
 However, this is potentially problematic because each of the O-rings are located in a different part of the solid rocket motors (3 sets in each rocket). Additionally each set denotes that there is a primary O-ring and a secondary O-ring where the secondary O-ring is more of redundancy purposes. In fact, the paper details that the primary O-ring undergoes significantly more stress than the secondary O-ring and can in fact affect how the secondary O-ring responds. This essentially means that each trial is not likely to be independent of one another. 
 
-To rectify this, the authors instead considered the random variable to be binary/bernoulli. ie. instead of looking at O-ring failures, they decided to just look at whether the rocket launched successfully or not (0 if no accident/1 if accident). This essentially eliminated the need to for the combinations term in the data and simplified things for them.  
+To rectify this, the authors instead considered the random variable to be binary/bernoulli. ie. instead of looking at O-ring failures, they decided to just look at whether the rocket launched successfully or not (0 if no accident/1 if accident). This essentially eliminated the need to for the combinations term in the data and simplified things for them. 
 
 (b) Estimate the logistic regression model using the explanatory variables in a linear form.
 
@@ -38,9 +46,9 @@ To rectify this, the authors instead considered the random variable to be binary
 prob = challenger$O.ring/challenger$Number
 
 mod.1 <- glm(
-  formula = prob ~ Temp + Pressure, 
-  family = quasibinomial(link = logit),
-  data = challenger
+formula = prob ~ Temp + Pressure, 
+family = binomial(link = logit),
+data = challenger
 )
 
 summary(mod.1)
@@ -55,16 +63,16 @@ Anova(mod.1, test = "LR")
 cat("\nBelow results are with anova package\n")
 anova(mod.1, test = "Chisq")
 
-mod.1.noPressure <-  glm(
-  formula = prob ~ Temp, 
-  family = quasibinomial(link = logit),
-  data = challenger  
+mod.1.noPressure <- glm(
+formula = prob ~ Temp, 
+family = binomial(link = logit),
+data = challenger 
 )
 
-mod.1.noTemperature <-  glm(
-  formula = prob ~ Pressure, 
-  family = quasibinomial(link = logit),
-  data = challenger  
+mod.1.noTemperature <- glm(
+formula = prob ~ Pressure, 
+family = binomial(link = logit),
+data = challenger 
 )
 
 cat("\nBelow results are without pressure\n")
@@ -80,17 +88,20 @@ anova(mod.1.noTemperature, mod.1, test = "Chisq")
 
 Based on all the LRTs done above, it seems that pressure does not explain the behavior as much as temperature does. It seems that the authors analysis coincided with this conclusion. In all instances, the p-value of the temperature is much lower that of pressure. However, the p-value is not so low that it would not pass the traditional alpha values of something being significant. This suggests that pressure, though not as much as temperature, is likely still to have an effect. This is in contrast to if the p-value for one of the variables like temperature would be much lower (ie. <0.001).
 
-To remove the variable, it does open the potential for the model to not fully explain the variance and overall predictive power as well.  
+High pressure causing blowholes. 
+
+To remove the variable, it does open the potential for the model to not fully explain the variance and overall predictive power as well. 
+
 
 5. Continuing Exercise 4, consider the simplified model $logit(\pi) = \beta_0 + \beta_1Temp$ where $\pi$ is the probability of an O-ring failure. Complete the following:
 
 (a) Estimate the model.
 
 ```{r}
-mod.1.noPressure <-  glm(
-  formula = prob ~ Temp, 
-  family = quasibinomial(link = logit),
-  data = challenger  
+mod.1.noPressure <- glm(
+formula = prob ~ Temp, 
+family = binomial(link = logit),
+data = challenger 
 )
 
 summary(mod.1.noPressure)
@@ -125,24 +136,25 @@ pi.ci.upper <- exp(pred.results$fit + qnorm(p =1-alpha /2)*pred.results$se)
 
 pi.expected.ci.lower.prob <- (pi.ci.lower/(1+pi.ci.lower))
 pi.expected.ci.upper.prob <- (pi.ci.upper/(1+pi.ci.upper))
-                              
+
 pi.expected.ci.lower.oring <- n*pi.expected.ci.lower.prob
 pi.expected.ci.upper.oring <- n*pi.expected.ci.upper.prob
 
 results.collection <- data.frame(
-  Temp=pred$Temp,
-  pi,
-  pi.ci.lower,
-  pi.ci.upper,
-  pi.expected.oring,
-  pi.expected.ci.lower.oring, 
-  pi.expected.ci.upper.oring,
-  pi.expected.prob, 
-  pi.expected.ci.lower.prob,
-  pi.expected.ci.upper.prob
+Temp=pred$Temp,
+pi,
+pi.ci.lower,
+pi.ci.upper,
+pi.expected.oring,
+pi.expected.ci.lower.oring, 
+pi.expected.ci.upper.oring,
+pi.expected.prob, 
+pi.expected.ci.lower.prob,
+pi.expected.ci.upper.prob
 )
 
-matplot(results.collection$Temp, results.collection[,2:5], pch=19 ,col = 1:3, ylab = "pi", xlab = "Temp")
+matplot(results.collection$Temp, results.collection[,2:4], pch=19 ,col = 1:3, ylab = "pi", xlab = "Temp")
+matplot(results.collection$Temp, results.collection[,8:10], pch=19 ,col = 1:3, ylab = "prob", xlab = "Temp")
 
 ```
 
@@ -156,7 +168,7 @@ head(results.collection,1)
 
 ```
 
-At 31 degrees, it seems there's about 81.8% chance of failure. However, this chance should be taken cautiously. As discussed previously, there is no data below the 50 degree region therefore as validated by the large  confidence interval gap, it's hard to say how accurate that zone of prediction is. We would have to assume that below 50 degrees, the behavior is linear per the model and that the effect of pressure does not change or somehow become more dominant in that zone. 
+At 31 degrees, it seems there's about 81.8% chance of failure. However, this chance should be taken cautiously. As discussed previously, there is no data below the 50 degree region therefore as validated by the large confidence interval gap, it's hard to say how accurate that zone of prediction is. We would have to assume that below 50 degrees, the behavior is linear per the model and that the effect of pressure does not change or somehow become more dominant in that zone. 
 
 (e) Rather than using Wald or profile LR intervals for the probability of failure, Dalal et al. (1989) use a parametric bootstrap to compute intervals. Their process was to (1) simulate a large number of data sets (n = 23 for each) from the estimated model of $logit(\hat{\pi}) = \hat{\beta_0} + \hat{\beta_1}Temp$; (2) estimate new models for each data set,
 say $logit(\hat{\pi^{*}}) = \hat{\beta_0^{*}} + \hat{\beta_1^{*}}Temp$; and (3) compute $\hat{\pi^{*}}$ at a specific temperature of interest. The authors used the 0.05 and 0.95 observed quantiles from the $\hat{\pi^{*}}$ simulated distribution as their 90% confidence interval limits. Using the parametric bootstrap, compute 90% confidence intervals separately at temperatures of 31 and 72 degrees.
@@ -170,25 +182,25 @@ get_bootstrap_ci = function(df_number, temp){
 vector <- vector("numeric")
 set.seed(1)
 
-for (i in 1:num_df) {
-    
-    df.tmp <- challenger[sample(nrow(challenger), 23, replace = TRUE), ]
-    
-    mod.1.tmp <-  glm(
-      formula = prob ~ Temp, 
-      family = quasibinomial(link = logit),
-      data = df.tmp   
-    )
-    
-    pred.value <- data.frame(Temp=temp)
-    pred.result <- predict(mod.1.tmp, pred.value, type = "link", se = TRUE)
-    vector[i] <- exp(pred.result$fit)
-  
-  }
+for (i in 1:df_number) {
 
-  results_sorted = sort(vector)
-  
-  cat("For temp",temp,"lower ci of pi:",results_sorted[df_number*0.05], ",upper ci of pi:",results_sorted[df_number*0.95],"\n")
+df.tmp <- challenger[sample(nrow(challenger), 23, replace = TRUE), ]
+
+mod.1.tmp <- glm(
+formula = prob ~ Temp, 
+family = binomial(link = logit),
+data = df.tmp 
+)
+
+pred.value <- data.frame(Temp=temp)
+pred.result <- predict(mod.1.tmp, pred.value, type = "link", se = TRUE)
+vector[i] <- exp(pred.result$fit)
+
+}
+
+results_sorted = sort(vector)
+
+cat("For temp",temp,"lower ci of pi:",results_sorted[df_number*0.05], ",upper ci of pi:",results_sorted[df_number*0.95],"\n")
 
 }
 
@@ -200,11 +212,11 @@ get_bootstrap_ci(100, 72)
 (f) Determine if a quadratic term is needed in the model for the temperature.
 
 ```{r}
-mod.temp.squared <-  glm(
-      formula = prob ~ Temp + I(Temp^2), 
-      family = quasibinomial(link = logit),
-      data = challenger  
-    )
+mod.temp.squared <- glm(
+formula = prob ~ Temp + I(Temp^2), 
+family = binomial(link = logit),
+data = challenger 
+)
 
 summary(mod.temp.squared)
 
@@ -220,17 +232,17 @@ Given the high p-value of the squared term in both the model summary and anova t
 The final model is $logit(\pi) = \beta_0 + \beta_1Temp$. In terms of odds, we can see that the odds ratio can be calculated simply as $\frac{exp(\beta_0 + \beta_1(Temp+c))}{exp(\beta_0 + \beta_1(Temp))}$ which simplifies to $exp(c\beta_1)$. Thusly, because the coefficient of temp is -0.1156, the estimated odds of an O-ring failing decreases by 0.890 times for every c-unit increases in temp. In terms of the probability of failure as seen below, it is very clear that the probability of there being a failure is high when the temperature is low (81.2% at 31 degrees) and this changes as the temperature increases (1.36% at 81 degrees).
 
 ```{r}
-results.collection
+head(results.collection,10)
 ```
 
 3b. 
 
 ```{r}
 mod.lin <- lm(
-  
-  formula = prob ~ Temp, 
-  data = challenger 
-  
+
+formula = prob ~ Temp, 
+data = challenger 
+
 )
 
 summary(mod.lin)

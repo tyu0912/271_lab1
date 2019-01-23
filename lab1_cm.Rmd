@@ -22,26 +22,35 @@ The failure of an O-ring on the space shuttle Challenger's booster rockets led t
 
 The response variable is O.ring, and the explanatory variables are Temp and Pressure. Complete the following:
 + (a) The authors use logistic regression to estimate the probability an O-ring will fail. In order to use this model, the authors needed to assume that each O-ring is independent for each launch. Discuss why this assumption is necessary and the potential problems with it. Note that a subsequent analysis helped to alleviate the authors' concerns about independence.
-  + In flights where there was at least one failure, there are likely to be more failures.  This would skew the distribution.  The binary (Bernoulli) model used by the authors simplified the observations to simply "at least one failure".  This obviates any potential dependence between observations. 
+  + In flights where there was at least one failure, there are likely to be more failures.  This would skew the distribution.  The binary (Bernoulli) model used by the authors simplified the observations to simply "at least one failure".  This obviates any potential dependence between observations.
+  + Rocket motors are potentially re-used.  Are O-rings replaced each time?
+  + There are 3 primary O-rings per rocket, some interdependence is expected.
   + https://stats.stackexchange.com/questions/259704/is-there-i-i-d-assumption-on-logistic-regression
 
 + (b) Estimate the logistic regression model using the explanatory variables in a linear form.
 ```{r}
 data = read.csv(file="./challenger.csv", header=TRUE)
-fit.a = glm(formula = O.ring > 0 ~ Temp + Pressure, family=binomial(link=logit),data = data)
+data$Prob = data$O.ring/data$Number
+```
+
+```{r}
+fit.a = glm(formula = Prob ~ Temp + Pressure, family=binomial(link=logit),data = data)
 summary(fit.a)
 ```
 
 + (c) Perform LRTs to judge the importance of the explanatory variables in the model.
 ```{r}
 library(car)
-Anova(fit.a)
+Anova(fit.a, test="LR")
 ```
 
 + (d) The authors chose to remove Pressure from the model based on the LRTs. Based on your results, discuss why you think this was done.  Are there any potential problems with removing this variable?
-  + Pressure wasn't shown to be statistically significant in the LRTs and removal of Pressure results in very similar AIC scores.  To ensure that the model was parsimonious, Pressure was removed.  There are no issues with removing Pressure from the model.
+  + Pressure wasn't shown to be statistically significant in the LRTs.
+  + Parsimony is desirable.
+  + PV = nRT
+  + High pressure can cause blow holes, which expose the O-ring to high temperature
 ```{r}
-fit.b = glm(formula = O.ring > 0 ~ Temp, family=binomial(link=logit),data = data)
+fit.b = glm(formula = Prob ~ Temp, family=binomial(link=logit),data = data)
 summary(fit.b)
 ```
 
@@ -50,25 +59,29 @@ summary(fit.b)
 Continuing Exercise 4, consider the simplified model $logit(\pi) = \beta_0 + \beta_1 Temp$ where $\pi$ is the probability of an O-ring failure.  Complete the following:
 + (a) Estimate the model
 ```{r}
-fit.c = glm(formula = O.ring > 0 ~ Temp, family=binomial(link=logit),data = data)
+fit.c = glm(formula = Prob ~ Temp, family=binomial(link=logit),data = data)
 summary(fit.c)
 ```
 
 + (b) Construct two plots: (1) $\pi$ vs. $Temp$ and (2) Expected number of failures vs. $Temp$.  Use a temperature range of $31\textdegree$ to $81\textdegree$ on the x-axis even though the minimum temperature in the data set was $53\textdegree$.
 ```{r}
-plot(data$Temp, fit.c$fitted.values, xlim=c(31,81))
+plotrange = seq(31, 81, 1)
+pred_odds = predict(fit.c, newdata=data.frame(Temp=plotrange), type="link")
+plot(plotrange, exp(pred_odds)/(1+exp(pred_odds)), xlim=c(31,81), ylab="Probability of failure", xlab="Temperature (F)")
+plot(plotrange, (exp(pred_odds)), xlim=c(31,81), ylab="Expected number of failures", xlab="Temperature (F)")
+
 ```
 
 + (c) Include the 95% Wald confidence interval bands for $\pi$ on the plot.  Why are the bands much wider for lower temperatures than for higher temperatures?
 ```{r}
-fit.c.pred = predict(fit.c, newdata=data.frame(Temp=data$Temp), type="link", se.fit=TRUE)
+fit.c.pred = predict(fit.c, newdata=data.frame(Temp=plotrange), type="link", se.fit=TRUE)
 lcl = fit.c.pred$fit - qnorm(0.975)*fit.c.pred$se.fit
 ucl = fit.c.pred$fit + qnorm(0.975)*fit.c.pred$se.fit
-plot(data$Temp, fit.c$fitted.values, xlim=c(31,81), ylim=c(0,1), col='blue')
+plot(plotrange, exp(fit.c.pred$fit)/(1+exp(fit.c.pred$fit)), xlim=c(31,81), ylim=c(0,1), col='blue')
 par(new=T)
-plot(data$Temp, exp(lcl)/(1+exp(lcl)), xlab='', ylab='', xlim=c(31,81), ylim=c(0,1))
+plot(plotrange, exp(lcl)/(1+exp(lcl)), xlab='', ylab='', xlim=c(31,81), ylim=c(0,1))
 par(new=T)
-plot(data$Temp, exp(ucl)/(1+exp(ucl)), xlab='', ylab='', xlim=c(31,81), ylim=c(0,1))
+plot(plotrange, exp(ucl)/(1+exp(ucl)), xlab='', ylab='', xlim=c(31,81), ylim=c(0,1))
 ```
 
 + (d) The temperature was $31\textdegree$ at launch for the Challenger in 1986.  Estimate the probability of an O-ring failure using this temperature, and compute a corresponding confidence interval.  Discuss what assumptions need to be made in order to apply the inference procedures.
@@ -78,7 +91,7 @@ predicted_prob = exp(predicted_odds$fit)/(1+exp(predicted_odds$fit))
 ci_odds = c(predicted_odds$fit - qnorm(1-.05/2)*predicted_odds$se.fit, predicted_odds$fit + qnorm(1-.05/2)*predicted_odds$se.fit)
 ci = exp(ci_odds)/(1+exp(ci_odds))
 "Predicted probability of at least one O-ring failure with 95% confidence interval:"
-paste(round(ci[1],7), "<", round(predicted_prob,7), "<", round(ci[2],7))
+paste(round(ci[1],5), "<", round(predicted_prob,5), "<", round(ci[2],5))
 ```
 
 + (e) Rather than using Wald or profile LR intervals for the probability of failure, Dalal et al. (1989) use a parameteric bootstrap to compute intervals.  Their process was to (1) simulate a large number of data sets ($n = 23$ for each) from the estimated model of $logit(\pi) = \beta_0 + \beta_1 Temp$; (2) estimate new models for each data set, say $logit(\hat \pi^*) = \hat \beta_0^* + \hat \beta_1^* Temp$; and (3) compute $\hat \pi^*$ at a specific temperature of interest.  The authors used the 0.05 and 0.95 observed quantiles from the $\hat \pi^*$ simulated distribution as their 90% confidence interval limits.  Using the parametric bootstrap, compute 90% confidence intervals separately at temperatures of $31\textdegree$ and $72\textdegree$.

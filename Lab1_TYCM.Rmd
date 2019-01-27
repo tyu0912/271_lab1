@@ -103,23 +103,11 @@ anova(mod.1.noPressure, mod.1, test = "Chisq")
 cat("\nBelow results are without temperature\n")
 anova(mod.1.noTemperature, mod.1, test = "Chisq")
 ```
-d
-**Conclusion**
 
-
-
-**Appendix**
-
-(4a) The authors use logistic regression to estimate the probability an O-ring will fail. In order to use this model, the authors needed to assume that each O-ring is independent for each launch. Discuss why this assumption is necessary and the potential problems with it. Note that a subsequent analysis helped to alleviate the authors' concerns about independence.
-
-(4b) Estimate the logistic regression model using the explanatory variables in a linear form.
-
-(4c) Perform LRTs to judge the importance of the explanatory variables in the model.
-
-(4d) The temperature was $31\textdegree$ at launch for the Challenger in 1986.  Estimate the probability of an O-ring failure using this temperature, and compute a corresponding confidence interval.  Discuss what assumptions need to be made in order to apply the inference procedures.
+Looking at the p-value of a chi-square distribution, it seems like pressure is not as significant. This seems to coincide with conclusions reached in the paper. Using this model, we produce a confidence interval, as asked for question 4d, of the launch at 31 degrees which was the temperature the rocket was launched at.
 
 ```{r}
-predicted_odds = predict(fit.b, newdata=data.frame(Temp=31), type="link", se.fit = TRUE)
+predicted_odds = predict(mod.1.noPressure, newdata=data.frame(Temp=31), type="link", se.fit = TRUE)
 predicted_prob = exp(predicted_odds$fit)/(1+exp(predicted_odds$fit))
 ci_odds = c(predicted_odds$fit - qnorm(1-.05/2)*predicted_odds$se.fit, predicted_odds$fit + qnorm(1-.05/2)*predicted_odds$se.fit)
 ci = exp(ci_odds)/(1+exp(ci_odds))
@@ -127,28 +115,9 @@ ci = exp(ci_odds)/(1+exp(ci_odds))
 paste(round(ci[1],5), "<", round(predicted_prob,5), "<", round(ci[2],5))
 ```
 
-Based on all the LRTs done above, it seems that pressure does not explain the behavior as much as temperature does. It seems that the authors analysis coincided with this conclusion. In all instances, the p-value of the temperature is much lower that of pressure. However, the p-value is not so low that it would not pass the traditional alpha values of something being significant. This suggests that pressure, though not as much as temperature, is likely still to have an effect. This is in contrast to if the p-value for one of the variables like temperature would be much lower (ie. <0.001).
+Overall, parsimony is desirable however we wonder if there isn't some interaction effect that temperature and pressure have. One of the foundation law's of physics is the ideal gas law, PV = nRT, which relates pressure (P) and temperature (T). In addition high pressure can cause blow holes, which expose the O-ring to high temperature as stated in the paper.Therefore to remove the variable, it does open the potential for the model to not fully explain the variance and overall predictive power as well. 
 
-High pressure causing blowholes. 
-
-To remove the variable, it does open the potential for the model to not fully explain the variance and overall predictive power as well. 
-
-
-5. Continuing Exercise 4, consider the simplified model $logit(\pi) = \beta_0 + \beta_1Temp$ where $\pi$ is the probability of an O-ring failure. Complete the following:
-
-(a) Estimate the model.
-
-```{r}
-mod.1.noPressure <- glm(
-formula = prob ~ Temp, 
-family = binomial(link = logit),
-data = challenger 
-)
-
-summary(mod.1.noPressure)
-```
-
-(b) Construct two plots: (1) $\pi$ vs. Temp and (2) Expected number of failures vs. Temp. Use a temperature range of 31 to 81 degrees on the x-axis even though the minimum temperature in the data set was 53 degrees.
+With an idea of the predicted probability at 31 degrees, we plot (1) $\pi$ vs. Temp and (2) Expected number of failures vs. Temp from 31 to 81 degrees as asked in question 5b. Note that we decided to skip question 5a since that is just asking to remodel the equation. 
 
 ```{r}
 
@@ -167,7 +136,7 @@ plot(pred$Temp, pi.expected.oring, ylab = "Expected Number of Failures", xlab = 
 
 ```
 
-(c) Include the 95% Wald confidence interval bands for on the plot. Why are the bands much wider for lower temperatures than for higher temperatures?
+With the Wald confidence interval as asked by question 5c, the plots look like below:
 
 ```{r}
 alpha = 0.05
@@ -199,10 +168,7 @@ matplot(results.collection$Temp, results.collection[,8:10], pch=19 ,col = 1:3, y
 
 ```
 
-Looking above, the gap is wider at lower temperatures because we did not have data at those temperatures to model. This is especially evident since it can be see that around 50 degrees, the gap starts to close and it is exactly around this region where we start having data. 
-
-(d) The temperature was 31 degrees at launch for the Challenger in 1986. Estimate the probability of an O-ring failure using this temperature, and compute a corresponding confidence interval. Discuss what assumptions need to be made in
-order to apply the inference procedures.
+Looking above, the gap is wider at lower temperatures because we did not have data at those temperatures to model. This is especially evident since it can be see that around 50 degrees, the gap starts to close and it is exactly around this region where we start having data. Below is also a summary table of the calculations (Note the values at 31 degrees as asked by question 5d). 
 
 ```{r}
 head(results.collection,1)
@@ -211,13 +177,9 @@ head(results.collection,1)
 
 At 31 degrees, it seems there's about 81.8% chance of failure. However, this chance should be taken cautiously. As discussed previously, there is no data below the 50 degree region therefore as validated by the large confidence interval gap, it's hard to say how accurate that zone of prediction is. We would have to assume that below 50 degrees, the behavior is linear per the model and that the effect of pressure does not change or somehow become more dominant in that zone. 
 
-(e) Rather than using Wald or profile LR intervals for the probability of failure, Dalal et al. (1989) use a parametric bootstrap to compute intervals. Their process was to (1) simulate a large number of data sets (n = 23 for each) from the estimated model of $logit(\hat{\pi}) = \hat{\beta_0} + \hat{\beta_1}Temp$; (2) estimate new models for each data set,
-say $logit(\hat{\pi^{*}}) = \hat{\beta_0^{*}} + \hat{\beta_1^{*}}Temp$; and (3) compute $\hat{\pi^{*}}$ at a specific temperature of interest. The authors used the 0.05 and 0.95 observed quantiles from the $\hat{\pi^{*}}$ simulated distribution as their 90% confidence interval limits. Using the parametric bootstrap, compute 90% confidence intervals separately at temperatures of 31 and 72 degrees.
+Given the described weaknesses of the Wald confidence interval, we replicate the bootstrapping method described in the paper as asked by question 5e.
 
 ```{r}
-# Sampling from temperature side and then applying to model -> No real randomness here. How can I guarantee the numbers I pick are random?? It wouldn't give the right pi inside the logit either. 
-# Sampling from P(X=0 successes (ie. >= 1 failure)) side is running into potentially infinite values if I do random binomial sample with the propabilities.
-
 get_bootstrap_ci = function(df_number, temp){
 
 vector <- vector("numeric")
@@ -250,7 +212,7 @@ get_bootstrap_ci(100, 72)
 
 ```
 
-(f) Determine if a quadratic term is needed in the model for the temperature.
+Lastly, we investigate the possibility of adding a quadratic term to the model as asked by question 5f
 
 ```{r}
 mod.temp.squared <- glm(
@@ -265,18 +227,11 @@ anova(mod.1.noPressure,mod.temp.squared, test = "Chisq")
 
 ```
 
-Given the high p-value of the squared term in both the model summary and anova test, it doesn't seem like the squared term is necessary. 
-
-
-3a. Interpret the main result of your final model in terms of both odds and probability of failure.
+Given the high p-value of the squared term in both the model summary and anova test, it doesn't seem like the squared term is necessary. The residual deviance decreased slightly from 3.01 to 2.93 (~3%) and the AIC increased from 7.2 to 9.2. To summarize our final model in terms of both odds and probability of failure.
 
 The final model is $logit(\pi) = \beta_0 + \beta_1Temp$. In terms of odds, we can see that the odds ratio can be calculated simply as $\frac{exp(\beta_0 + \beta_1(Temp+c))}{exp(\beta_0 + \beta_1(Temp))}$ which simplifies to $exp(c\beta_1)$. Thusly, because the coefficient of temp is -0.1156, the estimated odds of an O-ring failing decreases by 0.890 times for every c-unit increases in temp. In terms of the probability of failure as seen below, it is very clear that the probability of there being a failure is high when the temperature is low (81.2% at 31 degrees) and this changes as the temperature increases (1.36% at 81 degrees).
 
-```{r}
-head(results.collection,10)
-```
-
-3b. 
+In the above analysis, we used a combination of logistic regression and binomial theory to calculate a probability and expected number of failures. How does this compare to a traditional linear model? We also perform a classical linear regression to compare.
 
 ```{r}
 mod.lin <- lm(
@@ -297,5 +252,36 @@ Looking at the above diagnostic plots of the linear model $prob = \beta_0 + \bet
 
 Overall, I would prefer to use the binary logistic model since it is a more conservative model in its approach. A logistic model is advantageous since it does not require a linear relationship between the dependent and independent variables, the residuals do not need to be normally distributed and lastly, homoscedasticity is not required. Also, a logistic model outputs probabilities as its main result. This is much more useful given the circumstance since one O-ring failure is all that's needed for catastrophic disaster. In other words, its easier to say "what is the probability of failure with these given conditions" via the logistic model versus "What conditions will lead to a prediction of 1 or more".
 
+**Conclusion**
 
-*When the sample size is small, there is a substantial probability that AIC will select models that have too many parameters, i.e. that AIC will overfit.[7][8][9] To address such potential overfitting, AICc was developed: AICc is AIC with a correction for small sample sizes.
+
+
+**Appendix**
+
+(4a) The authors use logistic regression to estimate the probability an O-ring will fail. In order to use this model, the authors needed to assume that each O-ring is independent for each launch. Discuss why this assumption is necessary and the potential problems with it. Note that a subsequent analysis helped to alleviate the authors' concerns about independence.
+
+(4b) Estimate the logistic regression model using the explanatory variables in a linear form.
+
+(4c) Perform LRTs to judge the importance of the explanatory variables in the model.
+
+(4d) The temperature was $31\textdegree$ at launch for the Challenger in 1986.  Estimate the probability of an O-ring failure using this temperature, and compute a corresponding confidence interval.  Discuss what assumptions need to be made in order to apply the inference procedures.
+
+5. Continuing Exercise 4, consider the simplified model $logit(\pi) = \beta_0 + \beta_1Temp$ where $\pi$ is the probability of an O-ring failure. Complete the following:
+
+(a) Estimate the model.
+
+(b) Construct two plots: (1) $\pi$ vs. Temp and (2) Expected number of failures vs. Temp. Use a temperature range of 31 to 81 degrees on the x-axis even though the minimum temperature in the data set was 53 degrees.
+
+(c) Include the 95% Wald confidence interval bands for on the plot. Why are the bands much wider for lower temperatures than for higher temperatures?
+
+(d) The temperature was 31 degrees at launch for the Challenger in 1986. Estimate the probability of an O-ring failure using this temperature, and compute a corresponding confidence interval. Discuss what assumptions need to be made in
+order to apply the inference procedures.
+
+(e) Rather than using Wald or profile LR intervals for the probability of failure, Dalal et al. (1989) use a parametric bootstrap to compute intervals. Their process was to (1) simulate a large number of data sets (n = 23 for each) from the estimated model of $logit(\hat{\pi}) = \hat{\beta_0} + \hat{\beta_1}Temp$; (2) estimate new models for each data set,
+say $logit(\hat{\pi^{*}}) = \hat{\beta_0^{*}} + \hat{\beta_1^{*}}Temp$; and (3) compute $\hat{\pi^{*}}$ at a specific temperature of interest. The authors used the 0.05 and 0.95 observed quantiles from the $\hat{\pi^{*}}$ simulated distribution as their 90% confidence interval limits. Using the parametric bootstrap, compute 90% confidence intervals separately at temperatures of 31 and 72 degrees.
+
+(f) Determine if a quadratic term is needed in the model for the temperature.
+
+3a. Interpret the main result of your final model in terms of both odds and probability of failure.
+
+3b. With the same set of explanatory variables in your final model, estimate a linear regression model. Explain the model results; conduct model diagnostic; and assess the validity of the model assumptions.  Would you use the linear regression model or binary logistic regression in this case.  Please explain.

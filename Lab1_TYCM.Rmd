@@ -21,7 +21,7 @@ The goal of this analysis of this analysis is to develop a model to predict the 
 
 This report will feature an EDA section, followed by modeling and discussion. The latter of which will draw heavily from the exercise questions stated above. We will then conclude by summarizing our findings and presenting potential future work and considerations. 
 
-Note that the questions themselves can be found in the appendix and we will refer accordingly when we answer a question.
+Note that the questions themselves can be found in the appendix and we will refer accordingly to them in square brackets ([]) when we incorporate and address a question.
 
 **EDA**
 
@@ -56,7 +56,7 @@ A tabular and graphical examination of the data illustrates the general distribu
 
 A summary of the explanatory and response variables below shows the general distribution and ranges.
 ```{r}
-summary(challenger[,c("Pressure", "Temp", "O.ring")])
+skim(challenger[,c("Pressure", "Temp", "O.ring")])
 scatterplotMatrix(~ Temp + Pressure + O.ring, data=challenger, smooth = FALSE)
 ```
 
@@ -68,39 +68,34 @@ Pressure might play a role in O-ring damage, but it is unclear how significant t
 
 **Modeling & Discussion**
 
-In answering question 4a, one way to potentially model our data is to use logistic regression with the consideration that the O-rings are thought of as a binomial variable, where each ring is independent of one another and is governed by a probability of sucess and failure. 
+Using the exploratory data analysis and background research as a starting point we seek to develop a model including the terms $Temp$ and $Pressure$ to predict the probability of O-ring failure.  One way to model our data is to use logistic regression with the consideration that the O-rings are thought of as a binomial variable, where each ring is independent of one another and is governed by a probability of sucess and failure. 
 
-However, this is potentially problematic because each of the O-rings are located in a different part of the solid rocket motors (3 sets in each rocket). Operational anomalies that occur in a rocket likely affect all O-rings on the rocket. In terms of the rockets, rocket motors can potentially be re-used. Are O-rings replaced each time? The paper also details the existence of secondary O-rings and although it is the primary O-ring that undergoes significantly more stress the behavior of the primary O-ring seems to strongly dictate the behavior of the second O-ring. Joint rotation in the primary can cause the secondary to lose contact with the tang and enable gas release. This essentially means that each trial is not likely to be independent of one another and there are likely other variables involved as well.
+However, this is potentially problematic because each of the O-rings are located in a different part of the solid rocket motors (3 sets in each rocket). Operational anomalies that occur in a rocket likely affect all O-rings on the rocket. In terms of the rockets, rocket motors can potentially be re-used. Are O-rings replaced each time? The paper also details the existence of secondary O-rings and although it is the primary O-ring that undergoes significantly more stress the behavior of the primary O-ring seems to strongly dictate the behavior of the second O-ring. Joint rotation in the primary can cause the secondary to lose contact with the tang and enable gas release. This essentially means that each trial is not likely to be independent of one another and there are likely other variables involved as well. [4a]
 
-To rectify this, the authors instead considered the random variable to be binary/bernoulli. ie. instead of looking at O-ring failures, they decided to just look at whether the rocket launched successfully or not (0 if no accident/1 if accident). This essentially eliminated the need to for the combinations term in the data and simplified things for them. For the purposes of this exercise though, we stick to the binomial case and will attempt to model to the equation:
+To rectify this, the authors instead considered the random variable to be binary/Bernoulli. ie. instead of looking at O-ring failures, they decided to just look at whether the rocket launched successfully or not (0 if no accident/1 if accident). This essentially eliminated the need to for the combinations term in the data and simplified things for them. For the purposes of this exercise though, we stick to the binomial case.
 
-$$logit(\pi) = \beta_0 + \beta_1Temp + \beta_2Pressure$$
+The models that we propose are:
 
-where $\pi = p(t,s)/(1-p(t,s))$ and $p(t,s)$ comes from the binomial distribution $P(X=k) = nCk*p(t,s)^k * (1-p(t,s))^{n-k}$. As part of question 4b we proceed to model the data in linear form.
++ A complete model accounting for influence of Temp and Pressure. [4b]
 
+$$(1): logit(\pi) = \beta_0 + \beta_1Temp + \beta_2Pressure$$
++ A reduced model focusing on Temp since our background research suggests that this influences performance of the O-rings the most. [5a]
+$$(2): logit(\pi) = \beta_0 + \beta_1Temp$$
++ A quadratic model since the distribution of Temp vs O-ring data suggests that the data could have a non-linear relationship. [5f]
+$$(3): logit(\pi) = \beta_0 + \beta_1Temp + \beta_2Temp^2$$
+
+where $\pi = p(t,s)/(1-p(t,s))$ or $\pi = p(t)/(1-p(t))$, and $p(t,s)$ comes from the binomial distribution $P(X=k) = nCk*p(t,s)^k * (1-p(t,s))^{n-k}$.
+
+
+The code for modeling and the model estimate is below:
 ```{r}
-prob = challenger$O.ring/challenger$Number
+challenger$prob = challenger$O.ring/challenger$Number
 
-mod.1 <- glm(
+mod.1.full <- glm(
 formula = prob ~ Temp + Pressure, 
 family = binomial(link = logit),
 data = challenger
 )
-
-summary(mod.1)
-```
-
-Looking at the data above, we get the model:
-
-$$logit(\pi) = 2.520 + -0.098Temp + 0.008Pressure$$
-This first attempt at modeling seems to indicate that every one unit increase in temperature will decrease the chance of failure by 0.098 units whereas every unit increase in pressure will cause a 0.008 unit increase in chance of failure. This seems to make sense as low temperature can make O-rings shrink and not seal properly and high pressure would be additional stress. Looking at the p-values though, it seems that neither variable is extremely significant. With a lower p-value, temperature seems to be more important than pressure. As part of question 4c, we look perform the likelihood ratio test (LRT). 
-
-```{r}
-cat("\nBelow results are with Anova (car package)\n")
-suppressWarnings(Anova(mod.1, test = "LR"))
-
-cat("\nBelow results are with anova (base R package)\n")
-suppressWarnings(anova(mod.1, test = "Chisq"))
 
 mod.1.noPressure <- glm(
 formula = prob ~ Temp, 
@@ -108,21 +103,33 @@ family = binomial(link = logit),
 data = challenger 
 )
 
-mod.1.noTemperature <- glm(
-formula = prob ~ Pressure, 
+mod.temp.squared <- glm(
+formula = prob ~ Temp + I(Temp^2), 
 family = binomial(link = logit),
 data = challenger 
 )
 
-summary(mod.1.noPressure)
-summary(mod.1.noTemperature)
-
-cat("\nBelow results are without pressure\n")
-anova(mod.1.noPressure, mod.1, test = "Chisq")
-
-cat("\nBelow results are without temperature\n")
-anova(mod.1.noTemperature, mod.1, test = "Chisq")
+suppressWarnings(stargazer(mod.1.full, mod.1.noPressure, mod.temp.squared, type="text", keep.stat=c("n","aic"), omit.table.layout="n"))
 ```
+
+The results show the estimated coefficients, standard errors, and evaluations of the goodness-of-fit, Akaike Inf.Crit. (AIC).  The model with the lowest AIC (model 2) should have the best fit vs. parsimony of explanatory variables.
+
+Expressing the estimates in the form of models (1), (2), and (3) above yields:
+
+$$(1): logit(\hat \pi) = 2.520 + -0.098Temp + 0.008Pressure$$
+$$(2): logit(\hat \pi) = 5.085 + -0.116Temp$$
+$$(3): logit(\pi) = 22.126 + -0.651Temp + 0.004Temp^2$$
+
+Interpretting these models, for example model 1, every one unit increase in temperature will decrease the chance of failure by 0.098 units whereas every unit increase in pressure will cause a 0.008 unit increase in chance of failure. This could be understood as low temperature can make O-rings not seal properly and high pressure would be additional stress.
+
+Beyond comparing AIC values of the models, we're also interested in the effect that each explanatory variable has on the statistical significance.  For example, is model 1 statistically equivalent to model 2.  We can do this by comparing the  $-2log(\Lambda)$, where $\Lambda$ is the likelihood ratio test (LRT), to the $\chi^2_df$ distribution, allowing us to calculate a p-value.
+
+```{r}
+cat("\nBelow results are with anova (base R package)\n")
+suppressWarnings(anova(mod.1.full, mod.1.noPressure, mod.temp.squared, test = "Chisq"))
+```
+
+We see that the p-values (0.6123 and 0.7740) are not significant at $\alpha = 0.05$.  This means that all three of our models are equivalent.  Based upon this result we should proceed with the simplest model (2). [4c]
 
 Looking at the p-value of a chi-square distribution, it seems like pressure is not as significant. This seems to coincide with conclusions reached in the paper. Using this model, we produce a confidence interval, as asked for question 4d, of the launch at 31 degrees which was the temperature the rocket was launched at.
 

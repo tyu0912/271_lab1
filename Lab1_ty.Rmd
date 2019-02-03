@@ -255,3 +255,46 @@ plot(mod.lin, las = 1)
 Looking at the above diagnostic plots of the linear model $prob = \beta_0 + \beta_1Temp$, we can see that it is not ideal. The residual vs fitted and scale-location plot indicate some sort of non-linear relationship in the data and that the variance is not constant across samples (heteroscadastic). Furthermore, there appears to be outliers. Data points, 14 and 21 are marked above as having considerable leverage. In the data, these were cases where 2 O-rings failed instead of either 1 or 0. Because the vast majority of data points are those where O-rings only failed once or not at all, these two data points are skewing the model. In addition like logistic regression, this model would need independence from all discriptive variables and that is not the case as seen with pressure having some kind of affect. 
 
 Overall, I would prefer to use the binary logistic model since it is a more conservative model in its approach. A logistic model is advantageous since it does not require a linear relationship between the dependent and independent variables, the residuals do not need to be normally distributed and lastly, homoscedasticity is not required. Also, a logistic model outputs probabilities as its main result. This is much more useful given the circumstance since one O-ring failure is all that's needed for catastrophic disaster. In other words, its easier to say "what is the probability of failure with these given conditions" via the logistic model versus "What conditions will lead to a prediction of 1 or more".
+
+
+
+
+
+
+
+
+```{r}
+# This is the collection of our calculation steps. 
+
+alpha = 0.05
+
+pred <- data.frame(Temp=seq(31,81))
+pred.results <- predict(mod.1.noPressure, pred, type = "link", se = TRUE)
+
+pi = exp(pred.results$fit)
+
+n = 6
+pi.expected.prob = pi/(1+pi)
+pi.expected.oring = n*pi.expected.prob
+
+pi.ci.lower <- exp(pred.results$fit - qnorm(p =1-alpha /2)*pred.results$se)
+pi.ci.upper <- exp(pred.results$fit + qnorm(p =1-alpha /2)*pred.results$se)
+
+pi.expected.ci.lower.prob <- (pi.ci.lower/(1+pi.ci.lower))
+pi.expected.ci.upper.prob <- (pi.ci.upper/(1+pi.ci.upper))
+
+pi.expected.ci.lower.oring <- n*pi.expected.ci.lower.prob
+pi.expected.ci.upper.oring <- n*pi.expected.ci.upper.prob
+
+results.collection <- data.frame(
+Temp=pred$Temp,
+pi,
+pi.ci.lower,
+pi.ci.upper,
+pi.expected.oring,
+pi.expected.ci.lower.oring, 
+pi.expected.ci.upper.oring,
+pi.expected.prob, 
+pi.expected.ci.lower.prob,
+pi.expected.ci.upper.prob
+)

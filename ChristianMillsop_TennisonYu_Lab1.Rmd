@@ -78,9 +78,9 @@ As above, examination of the data illustrates the general distributions and rela
 
 According to Dalal et al (1989), the primary failure mode of the O-rings is by thermal erosion. This occurs when the O-rings are exposed to hot gas that is a product of the rocket reaction.
 
-We also understand that the mechanical properties of the O-rings are highly dependent upon the ambient temperature. For instance, the compressibility decreases as temperature decreases. Under low temperature conditions the O-rings might not seal the cavity within the rocket as designed. This allows hot gas to escape and then damage the O-rings leading to blow holes in the overall craft.
+We also understand that the physicial and mechanical properties of the O-rings are highly dependent on the ambient temperature. For instance, mechanically, the compressibility decreases as temperature decreases. Physically, the O-rings also erode very quickly under high temperature. The design was that a putty would be used to protect the O-rings from significant temperature effects of the ignited gas. If the putty were to fail and gases got through via blow holes, the O-rings would degrade and catastrophic failure would ensue.
 
-Pressure might play a role in O-ring damage, but it is unclear how significant that is. Under extreme pressure conditions, the O-rings can deform and can be penetrated by the pressurized gas, thus exposing the O-ring to significant thermal erosion as well.
+Pressure also plays a potential role in O-ring damage. Pressure is what causes the putty to seal the O-ring and protect it as mentioned above. In the paper they mention that 50, 100, and 200 psi of pressure were tested but they also mention that extreme pressures can cause the blow holes to form but this isn't very elaborated on. Because there were really only 3 temperatures tested as well, it is rather unclear how significant the effect of pressure is. Nevertheless, under extreme pressure conditions, the O-rings can deform and can be penetrated by the pressurized gas, thus exposing the O-ring to significant thermal erosion as well.
 
 # Modeling & Discussion
 
@@ -88,7 +88,7 @@ Pressure might play a role in O-ring damage, but it is unclear how significant t
 
 We seek to develop a model including the terms $Temp$ and $Pressure$ to predict the probability of O-ring failure.  One way to model our data is to use logistic regression with the consideration that the O-rings are thought of as a binomial variable, where each ring is independent of one another and is governed by a probability of success and failure. 
 
-However, this is potentially problematic because each of the O-rings are located in a different part of the solid rocket motors (3 sets in each rocket). Operational anomalies that occur in a rocket likely affect all O-rings on the rocket. In terms of the rockets, they can potentially be re-used as well. Are O-rings replaced each time in such cases? The paper also details the existence of secondary O-rings and although it is the primary O-ring that undergoes significantly more stress, the behavior of the primary O-ring can dictate the behavior of the second O-ring. For instance, joint rotation in the primary can cause the secondary to lose contact with the tang and enable gas release. This essentially means that each trial is not likely to be independent of one another and there are likely other variables involved as well. **[4a]**
+However, this is potentially problematic because each of the O-rings are located in a different part of the solid rocket motors (3 sets in each rocket). Variation in the different components and rocket initiation can affect the O-rings on the rocket differently. In terms of the rockets, they can potentially be re-used as well so wear and tear is another factor to consider. Are O-rings replaced each time in such cases? The paper also details the existence of secondary O-rings. These secondary O-rings are meant to be a fail safe in case the primary ones fail. Although it is unlikely since the secondary O-ring doesn't seem to get energized and can lose contact to the tang via joint rotation from the primary O-ring, there could be data in which the secondary O-ring worked and the result of primary O-ring failure was never caught. Lastly, as mentioned above there is also the putty that coats the primary O-ring. The paper mentions its response to pressure but the effects of temperature don't seem well discussed. Under low temperature conditions the O-rings might not seal the cavity within the rocket as designed. Overall, this essentially means that each trial is not likely to be independent of one another and there are likely other variables involved as well. **[4a]**
 
 To rectify this, the authors instead considered the random variable to be binary/Bernoulli. ie. instead of looking at O-ring failures, they decided to just look at whether the rocket launched successfully or not (0 if no accident/1 if accident). This essentially eliminated the need to for the combinations term in the data and simplified things for them. For the purposes of this exercise though, we stick to the binomial case.
 
@@ -157,7 +157,7 @@ suppressWarnings(anova(mod.1.noPressure, mod.temp.squared, test = "Chisq"))
 
 We see that the p-values (0.612 and 0.774) are not significant at $\alpha = 0.05$.  This means that all three of our models are statistically equivalent. The residual deviance does have an absolute change between models, but it does not have a statistical effect. Based upon our test results we chose to proceed with the simplest model (2). **[4c]**
 
-Although parsimony is desirable and we will be proceeding with the simplest model, we do acknowledge that pressure and temperature may have an unexplored interaction effect. Our exploratory data analysis indicated that there isn't much of a relationship between them in the data, but one of the foundation laws of physics is the ideal gas law, PV = nRT, which relates pressure (P) and temperature (T). As noted previously high pressure can cause blow holes, which exposes the O-ring to high temperature effects potentially as well and ultimately catastrophic failure. **[4d]**
+Although parsimony is desirable and we will be proceeding with the simplest model, we do acknowledge that pressure and temperature may have an unexplored interaction effect. Our exploratory data analysis indicated that there isn't much of a relationship between them in the data, but one of the foundation laws of physics is the ideal gas law, PV = nRT, which relates pressure (P) and temperature (T) in a gaseous system. Although we are dealing with solid objects, this formula raises the notion that there could be interactive effects. As noted previously high pressure can cause blow holes, which exposes the O-ring to high temperature effects potentially as well and ultimately catastrophic failure. **[4d]**
 
 ### Model Predictions
 
@@ -355,6 +355,8 @@ The linear regression model was deemed unsuitable since the fit was poor and the
 
 # Appendix
 
+## Questions from reference [2]
+
 (4a) The authors use logistic regression to estimate the probability an O-ring will fail. In order to use this model, the authors needed to assume that each O-ring is independent for each launch. Discuss why this assumption is necessary and the potential problems with it. Note that a subsequent analysis helped to alleviate the authors' concerns about independence.
 
 (4b) Estimate the logistic regression model using the explanatory variables in a linear form.
@@ -371,14 +373,15 @@ The linear regression model was deemed unsuitable since the fit was poor and the
 
 (c) Include the 95% Wald confidence interval bands for on the plot. Why are the bands much wider for lower temperatures than for higher temperatures?
 
-(d) The temperature was 31 degrees at launch for the Challenger in 1986. Estimate the probability of an O-ring failure using this temperature, and compute a corresponding confidence interval. Discuss what assumptions need to be made in
-order to apply the inference procedures.
+(d) The temperature was 31 degrees at launch for the Challenger in 1986. Estimate the probability of an O-ring failure using this temperature, and compute a corresponding confidence interval. Discuss what assumptions need to be made in order to apply the inference procedures.
 
 (e) Rather than using Wald or profile LR intervals for the probability of failure, Dalal et al. (1989) use a parametric bootstrap to compute intervals. Their process was to (1) simulate a large number of data sets (n = 23 for each) from the estimated model of $logit(\hat{\pi}) = \hat{\beta_0} + \hat{\beta_1}Temp$; (2) estimate new models for each data set,
 say $logit(\hat{\pi^{*}}) = \hat{\beta_0^{*}} + \hat{\beta_1^{*}}Temp$; and (3) compute $\hat{\pi^{*}}$ at a specific temperature of interest. The authors used the 0.05 and 0.95 observed quantiles from the $\hat{\pi^{*}}$ simulated distribution as their 90% confidence interval limits. Using the parametric bootstrap, compute 90% confidence intervals separately at temperatures of 31 and 72 degrees.
 
 (f) Determine if a quadratic term is needed in the model for the temperature.
 
-3a. Interpret the main result of your final model in terms of both odds and probability of failure.
+## Questions from assignment
 
-3b. With the same set of explanatory variables in your final model, estimate a linear regression model. Explain the model results; conduct model diagnostic; and assess the validity of the model assumptions.  Would you use the linear regression model or binary logistic regression in this case.  Please explain.
+<3a> Interpret the main result of your final model in terms of both odds and probability of failure.
+
+<3b> With the same set of explanatory variables in your final model, estimate a linear regression model. Explain the model results; conduct model diagnostic; and assess the validity of the model assumptions.  Would you use the linear regression model or binary logistic regression in this case.  Please explain.

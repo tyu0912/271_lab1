@@ -16,11 +16,11 @@ knitr::opts_chunk$set(fig.width=12, fig.height=8, echo=TRUE, warning=FALSE, mess
 
 # Abstract
 
-In this report, a statisical model of the probability of O-ring failure on the space shuttle Challenger is presented.  An 81.8% probability of O-ring damage was determined based upon a binomial logistic regression model.  Alternative logistic and linear models were also explored.  This analysis was inspired by the work of Dalal et al (1989) and agrees in results.
+In this report, a statistical model of the probability of O-ring failure on the space shuttle Challenger is presented.  An 81.8% probability of O-ring damage was determined based upon a binomial logistic regression model.  Alternative logistic and linear models were also explored.  This analysis was inspired by the work of Dalal et al (1989) and agrees in results.
 
 # Introduction
 
-On January 28, 1986, the Challenger spacerocket suffered catastrophic failure due to O-ring breakdowns inside the solid rocket motors of the booster. As a case study, we emulate the analysis done by Dalal et al (1989) by following questions 4 and 5 found in the exercise section of Chapter 2 of *Analysis of Categorical Data* (2015) by Christopher R. Bilder and Thomas M. Loughin. 
+On January 28, 1986, the Challenger space rocket suffered catastrophic failure due to O-ring breakdowns inside the solid rocket motors of the booster. As a case study, we emulate the analysis done by Dalal et al (1989) by following questions 4 and 5 found in the exercise section of Chapter 2 of *Analysis of Categorical Data* (2015) by Christopher R. Bilder and Thomas M. Loughin. 
 
 The goal of this analysis is to develop a model to predict the probability that the Challenger would fail under the conditions experienced, in particular a temperature of 31F.  The dataset being used is a list of damaged O-rings by shuttle flight.  Since in the event of failure, examination of the O-rings is impossible, we must use O-ring damage as an indicator of likely failure.  If the O-rings withstand enough damage, they will fail.
 
@@ -61,34 +61,34 @@ Looking at the description above, we are working with 23 rows and 5 columns of d
 
 The response variable is $O.ring$, and the explanatory variables are $Temp$ and $Pressure$. By dividing $O.ring$ by $Number$, we can also get the percent that were damaged during each flight.
 
-A tabular and graphical examination of the data illustrates the general distributions and relationships of the response and explanatory variables.
+A summary of the explanatory and response variables below shows the general distribution and ranges. We also look at the relationship between the different dependent and independent variables.
+```{r}
+describe(challenger[,c("Pressure", "Temp", "O.ring")])
+scatterplotMatrix(~ Temp + Pressure + O.ring, data=challenger, smooth = FALSE)
+```
+
+As above, examination of the data illustrates the general distributions and relationships of the response and explanatory variables.
 
 - $Temp$ and $O.ring$ have a strong, negative correlation
 - $Pressure$ and $O.ring$ have a weak, positive correlation
 - $Temp$ observations are clustered around 70.
 - $O.ring$ damage, in general, is an uncommon event
 
-A summary of the explanatory and response variables below shows the general distribution and ranges.
-```{r}
-describe(challenger[,c("Pressure", "Temp", "O.ring")])
-scatterplotMatrix(~ Temp + Pressure + O.ring, data=challenger, smooth = FALSE)
-```
-
 ## Background Research
 
-According to Dalal et al (1989), the primary failure mode of the O-rings is by thermal erosion.  This occurs when the O-rings are exposed to hot gas that is a product of the rocket reaction.
+According to Dalal et al (1989), the primary failure mode of the O-rings is by thermal erosion. This occurs when the O-rings are exposed to hot gas that is a product of the rocket reaction.
 
-We also understand that the mechanical properties of the O-rings are highly dependent upon the ambient temperature.  The durometer increases and the compressibility decreases as temperature decreases.  Under low temperature conditions the O-rings might not seal the cavity within the rocket as designed.  This allows hot gas to escape and then damage the O-rings.
+We also understand that the mechanical properties of the O-rings are highly dependent upon the ambient temperature. For instance, the compressibility decreases as temperature decreases. Under low temperature conditions the O-rings might not seal the cavity within the rocket as designed. This allows hot gas to escape and then damage the O-rings leading to blow holes in the overall craft.
 
-Pressure might play a role in O-ring damage, but it is unclear how significant that is.  Under pressure conditions, the sealant that is designed to protect the O-rings can be penetrated by pressurized gas, thus exposing the O-ring to thermal erosion.
+Pressure might play a role in O-ring damage, but it is unclear how significant that is. Under extreme pressure conditions, the O-rings can deform and can be penetrated by the pressurized gas, thus exposing the O-ring to significant thermal erosion as well.
 
 # Modeling & Discussion
 
 ## Logistic Regression Modeling
 
-We seek to develop a model including the terms $Temp$ and $Pressure$ to predict the probability of O-ring failure.  One way to model our data is to use logistic regression with the consideration that the O-rings are thought of as a binomial variable, where each ring is independent of one another and is governed by a probability of sucess and failure. 
+We seek to develop a model including the terms $Temp$ and $Pressure$ to predict the probability of O-ring failure.  One way to model our data is to use logistic regression with the consideration that the O-rings are thought of as a binomial variable, where each ring is independent of one another and is governed by a probability of success and failure. 
 
-However, this is potentially problematic because each of the O-rings are located in a different part of the solid rocket motors (3 sets in each rocket). Operational anomalies that occur in a rocket likely affect all O-rings on the rocket. In terms of the rockets, rocket motors can potentially be re-used. Are O-rings replaced each time? The paper also details the existence of secondary O-rings and although it is the primary O-ring that undergoes significantly more stress, the behavior of the primary O-ring seems to strongly dictate the behavior of the second O-ring. Joint rotation in the primary can cause the secondary to lose contact with the tang and enable gas release. This essentially means that each trial is not likely to be independent of one another and there are likely other variables involved as well. **[4a]**
+However, this is potentially problematic because each of the O-rings are located in a different part of the solid rocket motors (3 sets in each rocket). Operational anomalies that occur in a rocket likely affect all O-rings on the rocket. In terms of the rockets, they can potentially be re-used as well. Are O-rings replaced each time in such cases? The paper also details the existence of secondary O-rings and although it is the primary O-ring that undergoes significantly more stress, the behavior of the primary O-ring can dictate the behavior of the second O-ring. For instance, joint rotation in the primary can cause the secondary to lose contact with the tang and enable gas release. This essentially means that each trial is not likely to be independent of one another and there are likely other variables involved as well. **[4a]**
 
 To rectify this, the authors instead considered the random variable to be binary/Bernoulli. ie. instead of looking at O-ring failures, they decided to just look at whether the rocket launched successfully or not (0 if no accident/1 if accident). This essentially eliminated the need to for the combinations term in the data and simplified things for them. For the purposes of this exercise though, we stick to the binomial case.
 
@@ -106,7 +106,7 @@ $$(2): logit(\pi) = \beta_0 + \beta_1Temp$$
 + A quadratic model since the distribution of $Temp$ vs $O.ring$ data suggests that the data could have a non-linear relationship. **[5f]**
 $$(3): logit(\pi) = \beta_0 + \beta_1Temp + \beta_2Temp^2$$
 
-where $logit(\pi) = log\frac{p(t,s)}{(1-p(t,s))}$, and $p(t,s)$ is the probability of failure per O-ring for a given $Temp$, $t$, and $Pressure$, $s$.  The term $p(t,s)$ comes from the binomial distribution $P(X=k) = nCk*p(t,s)^k * (1-p(t,s))^{n-k}$.  In the case of no $Pressure$ term, $s$, then $p(t,s)$ is replaced by $p(t)$.
+where $logit(\pi) = log(\frac{\pi}{1-\pi})$ therefore it is a linking function. $\pi$ is the probability of failure per O-ring. It is denoted as $p(t,s)$ by Dalal et al (1989) to show the dependency of failure with a given $Temp$, $t$, and $Pressure$, $s$. The term $p(t,s)$ also relates to the binomial distribution $P(X=k) = nCk*p(t,s)^k * (1-p(t,s))^{n-k}$.  In the case of no $Pressure$ term, $s$, then $p(t,s)$ is replaced by $p(t)$.
 
 ### Model Estimates
 
@@ -133,7 +133,7 @@ data = challenger
 )
 
 suppressWarnings(stargazer(mod.1.full, mod.1.noPressure, mod.temp.squared,
-            keep.stat=c("n","aic"), omit.table.layout="n", header=FALSE, type='text'))
+keep.stat=c("n","aic"), omit.table.layout="n", header=FALSE, type='text'))
 ```
 
 The results show the estimated coefficients, standard errors, and evaluations of the goodness-of-fit, Akaike Inf.Crit. (AIC).  The model with the lowest AIC (model 2) should have the best fit vs. parsimony of explanatory variables.
@@ -144,7 +144,7 @@ $$(1): logit(\hat \pi) = 2.520 + -0.098Temp + 0.008Pressure$$
 $$(2): logit(\hat \pi) = 5.085 + -0.116Temp$$
 $$(3): logit(\hat \pi) = 22.126 + -0.651Temp + 0.004Temp^2$$
 
-Interpretting these models, for example model 1, every one unit increase in $Temp$ will decrease the chance of failure by 0.098 units whereas every unit increase in $Pressure$ will cause a 0.008 unit increase in chance of failure. This could be understood as low temperature can make O-rings not seal properly and high $Pressure$ would be additional stress.
+Interpreting these models, for example model 1, every one unit increase in temperature will decrease the chance of failure by 0.098 units whereas every unit increase in pressure will cause a 0.008 unit increase in chance of failure. This could be understood as low temperature and high pressure affecting O-rings to not seal properly.
 
 ### Model Selection
 
@@ -157,11 +157,11 @@ suppressWarnings(anova(mod.1.noPressure, mod.temp.squared, test = "Chisq"))
 
 We see that the p-values (0.612 and 0.774) are not significant at $\alpha = 0.05$.  This means that all three of our models are statistically equivalent. The residual deviance does have an absolute change between models, but it does not have a statistical effect. Based upon our test results we chose to proceed with the simplest model (2). **[4c]**
 
-Although parsimony is desirable and we will be proceeding with the simplest model, we do consider that $Pressure$ and $Temp$ may have an unexplored interaction effect.  Our exploratory data analysis indicated that there isn't much of a relationship between them in the data, but one of the foundation laws of physics is the ideal gas law, PV = nRT, which relates pressure (P) and temperature (T). Background research also supported that high pressure can cause blow holes, which expose the O-ring to high temperature. **[4d]**
+Although parsimony is desirable and we will be proceeding with the simplest model, we do acknowledge that pressure and temperature may have an unexplored interaction effect. Our exploratory data analysis indicated that there isn't much of a relationship between them in the data, but one of the foundation laws of physics is the ideal gas law, PV = nRT, which relates pressure (P) and temperature (T). As noted previously high pressure can cause blow holes, which exposes the O-ring to high temperature effects potentially as well and ultimately catastrophic failure. **[4d]**
 
 ### Model Predictions
 
-In order to explore the meaning of model 2, we generated plots of $\pi$ and the expected number of failures along with the 95% confidence interval versus $Temp$. **[5b, 5c]**
+In order to explore the meaning of model 2 and to give it more meaning, we generated plots of $\pi$ and the expected number of failures along with the 95% confidence interval versus $Temp$. **[5b, 5c]**
 
 ```{r}
 
@@ -189,7 +189,9 @@ curve (expr = ci.plot(mod.1.noPressure,x,alpha)$upper,
        col = "red", add = TRUE, xlim = c (31, 81), ylim=c(0,1))
 ```
 
-The confidence interval is wider at lower and higher temperatures because we did not have data at those temperatures to model. This is especially evident here that the gap is due to missing data as it can be seen that around 50 degrees, the gap starts to close and it is exactly around this region where we start having data. We can study this a little more by showing a standard error vs $Temp$ graph as below for a sequence of temperatures. Notice the dip is in the same region as the confidence interval above. Also the red points indicate the number of values of a specific temperature. As can be seen also, temperatures that are more frequent correspond to regions of tighter confidence gaps.
+Looking at the above, it appears that a much safer temperature to launch the shuttle would be around 65F due to the interval gap. Notably, the confidence interval is wider at lower and higher temperatures likely because we did not have as much data at those temperatures to model. 
+
+It is evident that this is the case as it can be seen that around 50 degrees, the gap starts to close and it is exactly around this region where we start having data. We can study this a little more by showing a standard error vs $Temp$ graph as below for a sequence of temperatures. Notice the dip is in the same region as the confidence interval above. Also the red points indicate the number of values of a specific temperature. As can be seen also, temperatures that are more frequent correspond to regions of tighter confidence gaps.
 
 ```{r}
 
@@ -201,15 +203,19 @@ pred_range = predict(object = mod.1.noPressure,
 plot(x = temp_range, 
      y = pred_range$se.fit,
      xlab = 'Temp',
-     ylab = 'Standard Error'
+     ylab = ''
 )
 
-point_count <- count(challenger, "Temp")
-points(point_count$Temp, point_count$freq, col = 'red', bg ='red', pch=19)
-axis(side = 4)
-mtext(side = 4, line = 3, 'Count of Temp')
-```
+par(new = T)
+with(count(challenger, "Temp"), points(Temp, freq, col = 'red', bg ='red', pch=19))
 
+legend("bottomleft",
+       legend=c('Standard Error', 'Temp Count'), 
+       lty=c(0,0), 
+       pch=c(1, 19), 
+       col=c('black', "red3")
+       )
+```
 
 Under the temperature conditions of Challenger (31F Temperature), our model predicts: **[4d]**
 
@@ -227,6 +233,7 @@ cat("Predicted probability of at least one damaged O-ring with 95% confidence in
 cat("\nPredicted count of damaged O-rings with 95% confidence interval:\n",
     round(ci[1]*6,4), "<", round(predicted_prob*6,4), "<", round(ci[2]*6,4))
 ```
+
 At 31 degrees, it seems there's about 81.8% chance of damage. However, this result should be taken cautiously. As discussed previously, there is no data below the 50 degree region therefore as validated by the large confidence interval gap, it's hard to say how accurate that zone of prediction is. We would have to assume that below 50 degrees, the behavior is linear per the model and that the effect of pressure does not change or somehow become more dominant in that zone. **[5d]**
 
 With our model we can also predict the total number of O-rings by temperature that would be damaged. **[5b]**
@@ -261,7 +268,7 @@ As can be seen, our model predicts that up to 5 O-rings can fail at low temperat
 
 ### Bootstrapped Confidence Interval
 
-Given the described weaknesses of the Wald confidence interval, Dalal et al (1989) used an alternative method to calculate confidence intervals.  The approach was to bootstrap the models, predict the probability of damage with each model, then select the predictions at the 5% and 95% quantiles to generate a 90% confidence interval.  We replicate the bootstrapping method at Dalal's CI of 90% and our model prediction's CI of 95% for comparison. **[5e]**
+Given the described weaknesses of the Wald confidence interval, Dalal et al (1989) used an alternative method to calculate confidence intervals. The approach was to bootstrap the models, predict the probability of damage with each model, then select the predictions at the 5% and 95% quantiles to generate a 90% confidence interval. We replicate the bootstrapping method at Dalal's CI of 90% and our model prediction's CI of 95% for comparison. **[5e]**
 
 ```{r}
 get_bootstrap_ci = function(df_number, temp, cl){
@@ -271,25 +278,27 @@ set.seed(1)
 
 for (i in 1:df_number) {
 
-df.tmp <- challenger[sample(nrow(challenger), 23, replace = TRUE), ]
-df.tmp$prob = df.tmp$O.ring/df.tmp$Number
-
-mod.1.tmp <- suppressWarnings(glm(
-formula = prob ~ Temp, 
-family = binomial(link = logit),
-data = df.tmp 
-))
-
-pred.value <- data.frame(Temp=temp)
-pred.result <- predict(mod.1.tmp, pred.value, type = "link", se = TRUE)
-vector[i] <- exp(pred.result$fit)/(1+ exp(pred.result$fit))
-
+  df.tmp <- challenger[sample(nrow(challenger), 23, replace = TRUE), ]
+  df.tmp$prob = df.tmp$O.ring/df.tmp$Number
+  
+  mod.1.tmp <- suppressWarnings(glm(
+  formula = prob ~ Temp, 
+  family = binomial(link = logit),
+  data = df.tmp 
+  ))
+  
+  pred.value <- data.frame(Temp=temp)
+  pred.result <- predict(mod.1.tmp, pred.value, type = "link", se = TRUE)
+  vector[i] <- exp(pred.result$fit)/(1+ exp(pred.result$fit))
 }
 
 results_sorted = sort(vector)
 
-c(Temp=temp, CL=paste(cl*100,"%", sep=""), CI_lower = results_sorted[df_number*(1-cl)/2], CI_upper = results_sorted[df_number*(1-(1-cl)/2)])
-
+c(Temp=temp, 
+  CL=paste(cl*100,"%", sep=""), 
+  CI_lower = results_sorted[df_number*(1-cl)/2],
+  CI_upper = results_sorted[df_number*(1-(1-cl)/2)]
+  )
 }
 
 data.frame(rbind(
@@ -300,13 +309,13 @@ data.frame(rbind(
 
 ```
 
-The bootstrap results for the 95% CI, 0.0671 < $\hat \pi$ < 0.9960 are slightly narrower than our previous result of 0.0019 < $\hat \pi$ < 0.9999.
+The bootstrap results for the 95% CI, 0.0671 < $\hat\pi$ < 0.9960 are slightly narrower than our previous result of 0.0019 < $\hat\pi$ < 0.9999.
 
-The final model is $logit(\pi) = \beta_0 + \beta_1Temp$. In terms of odds, we can see that the odds ratio can be calculated simply as $\frac{exp(\beta_0 + \beta_1(Temp+c))}{exp(\beta_0 + \beta_1(Temp))}$ which simplifies to $exp(c\beta_1)$. Thusly, because the coefficient of $Temp$ is -0.1156, the estimated odds of an O-ring failing decreases by 0.890 times for every c-unit increases in temp. In terms of the probability of failure as seen below, it is very clear that the probability of there being a failure is high when the temperature is low (81.8% at 31 degrees) and this changes as the temperature increases (1.36% at 81 degrees). **<3a>**
+The final model is $logit(\pi) = \beta_0 + \beta_1Temp$. In terms of odds, we can see that the odds ratio can be calculated simply as $\frac{exp(\beta_0 + \beta_1(Temp+c))}{exp(\beta_0 + \beta_1(Temp))}$ which simplifies to $exp(c\beta_1)$. Thus, because the coefficient of $Temp$ is -0.1156, the estimated odds of an O-ring failing decreases by 0.890 times for every c-unit increases in temp. In terms of the probability of failure as seen below, it is very clear that the probability of there being a failure is high when the temperature is low (81.8% at 31 degrees) and this changes as the temperature increases (1.36% at 81 degrees). **<3a>**
 
-## Linear Regression Modeling **<3b>**
+## Linear Regression Modeling
 
-In the above analysis, we used a combination of logistic regression and binomial theory to calculate a probability and expected number of failures. How does this compare to a traditional linear model? We also perform a classical linear regression to compare.  In the linear regression we use the same explanatory variable term, $Temp$, and a slightly different response variable, $O.ring$.  In this case, since the linear model is not bounded from 0 to 1, as in probability, it makes more sense to predict the number of damaged O.rings directly rather than the probability of damage.
+In the above analysis, we used a combination of logistic regression and binomial theory to calculate a probability and expected number of failures. How does this compare to a traditional linear model? We also perform a classical linear regression to compare. In the linear regression we use the same explanatory variable term, $Temp$, and a slightly different response variable, $O.ring$. In this case, since the linear model is not bounded from 0 to 1, as in probability, it makes more sense to predict the number of damaged O.rings directly rather than the probability of damage.
 
 ```{r}
 mod.lin <- lm(
@@ -323,15 +332,15 @@ plot(mod.lin, las = 1)
 
 We do not expect the linear model to have good predictive capability. The fit is poor, with an $R^2$ of 0.2613. Digging further into the diagnostic plots and Classical Linear Model (CLM) assumptions, we see further cause for concern. The residual vs fitted and scale-location plot indicate some sort of non-linear relationship in the data and that the variance is not constant across samples (heteroscadastic). Furthermore, there appear to be outliers. Data points, 14 and 21 are marked above as having considerable leverage. In the data, these were cases where 2 O-rings were damaged instead of either 1 or 0. Because the vast majority of data points are those where only a single O-ring was damaged or none at all, these two data points are skewing the model. In addition like logistic regression, this model would need independence from all descriptive variables and that is not the case as seen with pressure having some kind of effect. 
 
-Overall, we prefer to use the binomial logistic model since it is a more conservative model in its approach. A logistic model is advantageous since it does not require a linear relationship between the dependent and independent variables, the residuals do not need to be normally distributed and lastly, homoscedasticity is not required. Ignoring the requirements of either model, we also believe that the logisistic model produces a more useful result, ie. probability of O-ring damage.  In the context that any O-ring damage can lead to catastrophic failure the probability is more actionable. In other words, its easier to say "what is the probability of damage with these given conditions" via the logistic model versus "What conditions will lead to a prediction of 1 or more".
+Overall, we prefer to use the binomial logistic model since it is a more conservative model in its approach. A logistic model is advantageous since it does not require a linear relationship between the dependent and independent variables, the residuals do not need to be normally distributed and lastly, homoscedasticity is not required. Ignoring the requirements of either model, we also believe that the logistic model produces a more useful result, ie. probability of O-ring damage.  In the context that any O-ring damage can lead to catastrophic failure the probability is more actionable. In other words, its easier to say "what is the probability of damage with these given conditions" via the logistic model versus "What conditions will lead to a prediction of 1 or more". **<3b>**
 
 # Conclusion
 
 We explored three logistic regression models and one linear regression model in this analysis.  Based upon statistical examination of these models, we have concluded that the model $logit(\pi) = \beta_0 + \beta_1 * Temp$ is most suitable. Our analysis and results are consistent with the finding of Dalal et al (1989).
 
-For logistic model selection we examined the AIC values of different models and the significance of the explanatory variables using LRT.  The other models did not explain a greater amount of the variance in the data and were more complicated.  This is demonstrated by the AIC value for the chosen model (7.2026) versus the $Pressure$ and $Temp^2$ models (9.2286 and 9.2373).  The LRT analysis didn't produce p-values < 0.1 for any variables, but generally showed that $Temp$ by itself is the most likely to be significant.
+For logistic model selection we examined the AIC values of different models and the significance of the explanatory variables using LRT. The other models did not explain a greater amount of the variance in the data and were more complicated.  This is demonstrated by the AIC value for the chosen model (7.2026) versus the $Pressure$ and $Temp^2$ models (9.2286 and 9.2373). The LRT analysis didn't produce p-values < 0.1 for any variables, but generally showed that $Temp$ by itself is the most likely to be significant.
 
-The linear regression model was deemed unsuitable since the fit was poor and the underlying CLM assumptions were not met.  The failure of the CLM assumptions reduces our confidence that model would be able to predict O-ring damage in a region of the regression for which there was no data. 
+The linear regression model was deemed unsuitable since the fit was poor and the underlying CLM assumptions were not met. The failure of the CLM assumptions reduces our confidence that model would be able to predict O-ring damage in a region of the regression for which there was no data. 
 
 
 # References
